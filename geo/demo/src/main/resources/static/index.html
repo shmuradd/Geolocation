@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Search</title>
+</head>
+<body>
+
+<h1>Search for Doctors</h1>
+
+<form id="doctor-search-form">
+    <label for="city">City:</label>
+    <input type="text" id="city" name="city" placeholder="Enter city or use location">
+    <button type="button" onclick="detectLocation()">Use My Location</button>
+    <button type="submit">Search</button>
+</form>
+
+<h2>Doctors:</h2>
+<div id="doctor-results"></div>
+
+<script>
+    // Detect location using geolocation API
+    function detectLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                // Use reverse geocoding to get the city based on latitude and longitude
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById("city").value = data.address.city || "Unknown";
+                    })
+                    .catch(error => console.error("Error getting location:", error));
+            });
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    }
+
+    // Submit the form and search for doctors
+    document.getElementById("doctor-search-form").addEventListener("submit", function(event) {
+        event.preventDefault();
+        const city = document.getElementById("city").value;
+
+        fetch(`/api/searchDoctors?city=${city}`, {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(doctors => {
+                const doctorResultsDiv = document.getElementById("doctor-results");
+                doctorResultsDiv.innerHTML = "";  // Clear previous results
+                if (doctors.length > 0) {
+                    doctors.forEach(doctor => {
+                        doctorResultsDiv.innerHTML += `<p>${doctor.name} - ${doctor.clinic}</p>`;
+                    });
+                } else {
+                    doctorResultsDiv.innerHTML = "<p>No doctors found.</p>";
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+    });
+</script>
+
+</body>
+</html>
